@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add a Museum</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"></script>
+</head>
+<body>
+    <!-- navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">Museum Search</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <form class="d-flex ms-auto me-2" action="/search" method="post">
+                    <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search" name="search">
+                    <button class="btn btn-outline-success" type="submit">Search</button>
+                </form>
+                <div>
+                    <a class="btn btn-primary" href="/add">Add Museum</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <h2>Add a New Museum</h2>
+
+        <!-- Flash messages for feedback -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="card">
+            <div class="card-body">
+                <form id="museumForm" method="POST">
+                    <div class="mb-3">
+                        <label for="title" class="form-label">Title:</label>
+                        <input type="text" class="form-control" id="title" name="title" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="image" class="form-label">Image URL:</label>
+                        <input type="url" class="form-control" id="image" name="image" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="year" class="form-label">Year Established:</label>
+                        <input type="text" class="form-control" id="year" name="year" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="summary" class="form-label">Summary:</label>
+                        <textarea class="form-control" id="summary" name="summary" rows="4" required></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="director" class="form-label">Director(s) (comma-separated):</label>
+                        <input type="text" class="form-control" id="director" name="director" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="budget" class="form-label">Budget/Entry Fee:</label>
+                        <input type="text" class="form-control" id="budget" name="budget" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="features" class="form-label">Features (comma-separated):</label>
+                        <input type="text" class="form-control" id="features" name="features" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="score" class="form-label">Rating (out of 10):</label>
+                        <input type="text" class="form-control" id="score" name="score" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="genres" class="form-label">Genres (comma-separated):</label>
+                        <input type="text" class="form-control" id="genres" name="genres" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="similar_ids" class="form-label">Similar Museum IDs (comma-separated):</label>
+                        <input type="text" class="form-control" id="similar_ids" name="similar_ids" required>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Submit</button>
+                </form>
+            </div>
+        </div>
+
+        <div id="successMessage" class="alert alert-success mt-3" style="display: none;">
+            <p class="mb-2">New museum successfully created!</p>
+            <div class="d-flex gap-2">
+                <a href="" id="viewItemLink" class="btn btn-primary">View Museum</a>
+                <button id="addAnotherItemBtn" class="btn btn-secondary">Add Another Museum</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+
+$(document).ready(function() {
+    // Add 'required' class to all form labels
+    $('#museumForm label.form-label').addClass('required');
+    
+    // Update the year field label to clarify
+    $('#year').prev('label').text('Year Established');
+    
+    // Form validation function
+    function validateForm() {
+        let isValid = true;
+        
+        // Clear previous error messages
+        $('.invalid-feedback').remove();
+        $('.error-message').remove();
+        $('.is-invalid').removeClass('is-invalid');
+        
+        // Check each field individually - this ensures ALL empty fields get marked
+        
+        // Title validation (required)
+        if (!$('#title').val().trim()) {
+            $('#title').addClass('is-invalid');
+            $('#title').after('<div class="error-message">Please enter a museum title</div>');
+            isValid = false;
+        }
+        
+        // Image URL validation (required and URL format)
+        const imageUrl = $('#image').val().trim();
+        if (!imageUrl) {
+            $('#image').addClass('is-invalid');
+            $('#image').after('<div class="error-message">Please enter an image URL</div>');
+            isValid = false;
+        } else if (!/^https?:\/\/.+/.test(imageUrl)) {
+            $('#image').addClass('is-invalid');
+            $('#image').after('<div class="error-message">Please enter a valid URL (starting with http:// or https://)</div>');
+            isValid = false;
+        }
+        
+        // Year validation (required and number)
+        const year = $('#year').val().trim();
+        if (!year) {
+            $('#year').addClass('is-invalid');
+            $('#year').after('<div class="error-message">Please enter the year the museum was established</div>');
+            isValid = false;
+        } else if (isNaN(year) || parseInt(year) <= 0) {
+            $('#year').addClass('is-invalid');
+            $('#year').after('<div class="error-message">Please enter a valid year (number)</div>');
+            isValid = false;
+        }
+        
+        // Summary validation (required)
+        if (!$('#summary').val().trim()) {
+            $('#summary').addClass('is-invalid');
+            $('#summary').after('<div class="error-message">Please enter a summary</div>');
+            isValid = false;
+        }
+        
+        // Director validation (required)
+        if (!$('#director').val().trim()) {
+            $('#director').addClass('is-invalid');
+            $('#director').after('<div class="error-message">Please enter director(s)</div>');
+            isValid = false;
+        }
+        
+        // Budget validation (required but can be text)
+        const budget = $('#budget').val().trim();
+        if (!budget) {
+            $('#budget').addClass('is-invalid');
+            $('#budget').after('<div class="error-message">Please enter the budget/entry fee (or "Pay as you wish" if applicable)</div>');
+            isValid = false;
+        }
+        
+        // Features validation (required)
+        if (!$('#features').val().trim()) {
+            $('#features').addClass('is-invalid');
+            $('#features').after('<div class="error-message">Please list some features</div>');
+            isValid = false;
+        }
+        
+        // Score validation (required and number between 1-10)
+        const score = $('#score').val().trim();
+        if (!score) {
+            $('#score').addClass('is-invalid');
+            $('#score').after('<div class="error-message">Please enter a rating</div>');
+            isValid = false;
+        } else if (isNaN(score) || parseFloat(score) < 1 || parseFloat(score) > 10) {
+            $('#score').addClass('is-invalid');
+            $('#score').after('<div class="error-message">Please enter a valid rating between 1 and 10</div>');
+            isValid = false;
+        }
+        
+        // Genres validation (required)
+        if (!$('#genres').val().trim()) {
+            $('#genres').addClass('is-invalid');
+            $('#genres').after('<div class="error-message">Please enter genres</div>');
+            isValid = false;
+        }
+        
+        // Similar IDs validation (required)
+        if (!$('#similar_ids').val().trim()) {
+            $('#similar_ids').addClass('is-invalid');
+            $('#similar_ids').after('<div class="error-message">Please enter similar museum IDs</div>');
+            isValid = false;
+        }
+        
+        return isValid;
+    }
+
+    // Handle form submission
+    $('#museumForm').submit(function(event) {
+        event.preventDefault(); // Prevent regular form submission
+        
+        // Always run validation for ALL fields
+        const isValid = validateForm();
+        
+        if (!isValid) {
+            // If validation fails, scroll to the first error
+            const firstError = $('.is-invalid:first');
+            if (firstError.length) {
+                $('html, body').animate({
+                    scrollTop: firstError.offset().top - 100
+                }, 'slow');
+                firstError.focus();
+            }
+            return false;
+        }
+
+        // Form is valid, proceed with submission
+        let formData = $(this).serialize();
+
+        $.ajax({
+            url: '/add',
+            method: 'POST',
+            data: formData,
+            success: function(response) {
+                if (response.success) {
+                    // Display success message
+                    $('#successMessage').show();
+                    $('#viewItemLink').attr('href', '/view/' + response.museum_id);
+                    $('#museumForm').hide();
+                    $('html, body').animate({ scrollTop: $('#successMessage').offset().top }, 'slow');
+                    
+                    $('#addAnotherItemBtn').click(function() {
+                        $('#museumForm')[0].reset();
+                        $('#museumForm').show();
+                        $('#successMessage').hide();
+                        $('#title').focus();
+                    });
+                } else {
+                    // Handle server-side errors
+                    if (response.errors && response.errors.length) {
+                        response.errors.forEach(function(error) {
+                            if (error.field && $('#' + error.field).length) {
+                                $('#' + error.field).addClass('is-invalid');
+                                $('#' + error.field).after('<div class="error-message">' + error.message + '</div>');
+                            }
+                        });
+                        
+                        // Scroll to the first error
+                        const firstError = $('.is-invalid:first');
+                        if (firstError.length) {
+                            $('html, body').animate({
+                                scrollTop: firstError.offset().top - 100
+                            }, 'slow');
+                            firstError.focus();
+                        }
+                    } else {
+                        // Generic error
+                        $('#museumForm').before('<div class="alert alert-danger">There was a problem with your submission. Please check all fields and try again.</div>');
+                    }
+                }
+            },
+            error: function() {
+                $('#museumForm').before('<div class="alert alert-danger">An error occurred while submitting the form. Please try again.</div>');
+            }
+        });
+    });
+
+    // Add input event listeners to clear error state when user corrects it
+    $('input, textarea').on('input', function() {
+        $(this).removeClass('is-invalid');
+        $(this).next('.invalid-feedback, .error-message').remove();
+    });
+});
+
+    </script>
+</body>
+</html>

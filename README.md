@@ -1,6 +1,6 @@
 How to run the museumsearch site locally:
 
-1. Clone the repository from GitHub: git clone https://github.com/your-username/museumsearch.git
+1. Clone the repository from GitHub: git clone https://github.com/UnaisahAhmed/museumsearch.git
 
 2. Navigate to the project folder: cd museumsearch
 
